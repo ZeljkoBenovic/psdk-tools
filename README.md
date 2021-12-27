@@ -10,4 +10,7 @@ Python script for fast spinup of PolygonSDK nodes on localhost for testing and d
   - -c *COMMAND*: "start new server", "start", "stop"
   - -b *BRANCH*: branch name you would like to clone
   - -pm *PREMINE ADDRESSES*: space delimited addressed that shoud have premined funds
+
+## Tested on:
+- Ubuntu
   
