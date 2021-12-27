@@ -264,5 +264,9 @@ class PsdkCommands:
     settings["block_gas_limit"] = self.__args.block_gas_limit
     settings["max_slots"] = self.__args.max_slots
 
+    # create storage dir that will hold node info
+    if not os.path.isdir(os.path.dirname(__file__)+"/storage"):
+      os.mkdir(os.path.dirname(__file__)+"/storage")
+    
     with open(os.path.dirname(__file__)+"/storage/config.json","w") as json_settings:
       json.dump(settings,json_settings,indent=4)
