@@ -223,12 +223,10 @@ class Cloud(Environment):
   def _FetchCode(self) -> None:
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
       executor.map(self.__FetchCodeThread, self.__args.hosts)
-    print("Fetching code done on all nodes.")
   
   def _VerifyGo(self):
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
       executor.map(self.__VerifyGoThread, self.__args.hosts)
-    print("Verified GO on all nodes.")
   
   
   
@@ -239,7 +237,7 @@ class Cloud(Environment):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
       ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
-    except paramiko.SSHException as e:
+    except BaseException as e:
       print(f"Could not connect to {host} . ERROR: {e}")
       
 
@@ -268,7 +266,7 @@ class Cloud(Environment):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
       ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
-    except paramiko.SSHException as e:
+    except BaseException as e:
       print(f"Could not connect to {host} . ERROR: {e}")
 
     _,out,_ = ssh.exec_command("which go")
