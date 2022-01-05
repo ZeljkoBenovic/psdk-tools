@@ -222,12 +222,12 @@ class Cloud(Environment):
   
   def _FetchCode(self) -> None:
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-      executor.map(self.__FetchCodeThread, self.__args.hosts)
+      executor.map(self.__FetchCodeThread, self.__args.hosts,timeout=10)
     print("Fetching code done on all nodes.")
   
   def _VerifyGo(self):
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-      executor.map(self.__VerifyGoThread, self.__args.hosts)
+      executor.map(self.__VerifyGoThread, self.__args.hosts, timeout=10)
     print("Verified GO on all nodes.")
   
   
