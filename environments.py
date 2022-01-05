@@ -222,12 +222,12 @@ class Cloud(Environment):
   
   def _FetchCode(self) -> None:
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-      executor.map(self.__FetchCodeThread, self.__args.hosts,timeout=10)
+      executor.map(self.__FetchCodeThread, self.__args.hosts)
     print("Fetching code done on all nodes.")
   
   def _VerifyGo(self):
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-      executor.map(self.__VerifyGoThread, self.__args.hosts, timeout=10)
+      executor.map(self.__VerifyGoThread, self.__args.hosts)
     print("Verified GO on all nodes.")
   
   
@@ -237,7 +237,11 @@ class Cloud(Environment):
     ssh = paramiko.SSHClient()
     ssh.get_host_keys().clear()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key)
+    try:
+      ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
+    except paramiko.SSHException as e:
+      print(f"Could not connect to {host} . ERROR: {e}")
+      
 
     # remove clone dir if already exists
     ssh.exec_command("rm -R "+self.__args.clone_path)
@@ -262,7 +266,10 @@ class Cloud(Environment):
     ssh = paramiko.SSHClient()
     ssh.get_host_keys().clear()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key)
+    try:
+      ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
+    except paramiko.SSHException as e:
+      print(f"Could not connect to {host} . ERROR: {e}")
 
     _,out,_ = ssh.exec_command("which go")
     if not out.read():
