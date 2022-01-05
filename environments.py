@@ -6,9 +6,13 @@ import signal
 import shutil
 import platform
 import json
+import concurrent.futures
+
 # import local git package
 sys.path.append(os.path.dirname(__file__)+'/vendor/git')
+sys.path.append(os.path.dirname(__file__)+'/vendor/paramiko')
 from git import Repo
+import paramiko
 
 from helpers import UserInputBool
 
@@ -215,12 +219,64 @@ class Cloud(Environment):
 
   def __init__(self,args) -> None:
       self.__args = args
-
-  def _FetchCode(self):
-    print("Fetch Code")
+  
+  def _FetchCode(self) -> None:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+      executor.map(self.__FetchCodeThread, self.__args.hosts)
+    print("Fetching code done on all nodes.")
   
   def _VerifyGo(self):
-    print("Verify Go")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+      executor.map(self.__VerifyGoThread, self.__args.hosts)
+    print("Verified GO on all nodes.")
+  
+  
+  
+  def __FetchCodeThread(self,host: str) -> None:
+    # setup ssh client
+    ssh = paramiko.SSHClient()
+    ssh.get_host_keys().clear()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key)
+
+    # remove clone dir if already exists
+    ssh.exec_command("rm -R "+self.__args.clone_path)
+    ssh.exec_command("mkdir -p "+self.__args.clone_path)
+
+    # check if git is installed
+    _,out,_ = ssh.exec_command("which git")
+    if not out.read():
+      # install git ubuntu
+      ssh.exec_command("sudo apt install git")
+    
+    #clone branch
+    ssh.exec_command(f"cd {self.__args.clone_path} && git clone https://github.com/0xPolygon/polygon-sdk.git -b {self.__args.branch} .")
+
+    print(f"Branch {self.__args.branch} on {host} is cloned.")
+
+    ssh.close()
+    return
+
+  def __VerifyGoThread(self,host: str) -> None:
+     # setup ssh client
+    ssh = paramiko.SSHClient()
+    ssh.get_host_keys().clear()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key)
+
+    _,out,_ = ssh.exec_command("which go")
+    if not out.read():
+      # install go ubuntu
+      ssh.exec_command("sudo snap install go --classic")
+      print(f"Go is installed on {host}. Proceeding...")
+    else:
+      print(f"Go already installed on {host}. Proceeding...")
+    
+    ssh.close()
+    return
+    
+  
+
   
   def _InitPSDKServer(self):
     print("Init psdk")
