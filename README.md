@@ -12,5 +12,5 @@ Python script for fast spinup of PolygonSDK nodes on localhost for testing and d
   - -pm *PREMINE ADDRESSES*: space delimited addressed that shoud have premined funds
 
 ## Tested on:
-- Ubuntu
+- Ubuntu 20.04
   

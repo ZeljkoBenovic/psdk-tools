@@ -18,7 +18,7 @@ class PsdkCommands:
     self.__parser.add_argument("--hosts",dest="hosts",default=[],nargs="*",help="If environment is not local, with this flag you specify space delimited list of ip addresses of hosts.")
     self.__parser.add_argument("-s",dest="ssh_key",default="~/.ssh/id_rsa.pub",help="If environment is not local, we'll need ssh key to authenticate to remote hosts. Default: ~/.ssh/id_rsa_pub")
   
-    self.__parser.add_argument("-c", "--command",dest="command",default="",help="The command you would like to run against all nodes. For multiple commands \" \" are required. Default: start new chain")
+    self.__parser.add_argument("-c", "--command",dest="command",default="",help="The command you would like to run against all nodes. For multiple commands \" \" are required.")
     self.__parser.add_argument("-b", "--branch",dest="branch",default="develop",help="PolygonSDK branch that will be cloned. Default: develop")
     self.__parser.add_argument("-d", "--dir",dest="clone_path",default="/tmp/polygon/polygon-sdk",help="Folder to clone repo into. Default: /tmp/polygon-sdk")
     self.__parser.add_argument("-pd", "--psdk-data",dest="psdk_data",default="/tmp/polygon/data",help="Folder to put the PolygonSDK data files. Default: /tmp/polygon/data")
@@ -71,7 +71,7 @@ class PsdkCommands:
       self.__env._StartServer()
 
     else:
-      self.__parser.print_help()
+      print("No COMMAND (-c) parameter provided. To get help use -h")
     
   # start a brand new chain
   def __StartNewChain(self) -> None:
