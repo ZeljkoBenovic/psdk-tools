@@ -18,7 +18,7 @@ class PsdkCommands:
     self.__parser.add_argument("--hosts",dest="hosts",default=[],nargs="*",help="If environment is not local, with this flag you specify space delimited list of ip addresses of hosts.")
     self.__parser.add_argument("-s",dest="ssh_key",default="~/.ssh/id_rsa.pub",help="If environment is not local, we'll need ssh key to authenticate to remote hosts. Default: ~/.ssh/id_rsa_pub")
     self.__parser.add_argument("-su",dest="ssh_user",default="ubuntu",help="If environment is not local, we'll need ssh username to authenticate to remote hosts. Default: ubuntu")
-  
+    self.__parser.add_argument("-r","--release",dest="release",default="none",help="If you provide the release, the polygon-sdk will be run from its binary. Default: none")
     self.__parser.add_argument("-c", "--command",dest="command",default="",help="The command you would like to run against all nodes. For multiple commands \" \" are required.")
     self.__parser.add_argument("-b", "--branch",dest="branch",default="develop",help="PolygonSDK branch that will be cloned. Default: develop")
     self.__parser.add_argument("-d", "--dir",dest="clone_path",default="/tmp/polygon/polygon-sdk",help="Folder to clone repo into. Default: /tmp/polygon-sdk")

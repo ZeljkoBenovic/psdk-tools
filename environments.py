@@ -219,7 +219,13 @@ class Cloud(Environment):
 
   def __init__(self,args) -> None:
       self.__args = args
+      self.__validators = {}
+      self.__SanityCheck()
   
+  def __SanityCheck(self) -> None:
+    if len(self.__args.hosts) < self.__args.validators:
+        sys.exit("Not enough host ips provided! Please provide at least 4 host ip addresses")
+
   def _FetchCode(self) -> None:
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
       executor.map(self.__FetchCodeThread, self.__args.hosts)
@@ -228,7 +234,17 @@ class Cloud(Environment):
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
       executor.map(self.__VerifyGoThread, self.__args.hosts)
   
+  def _InitPSDKServer(self):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+      executor.map(self.__InitPSDKServerThread, self.__args.hosts)
+
+    # write this information to json file
+    with open(os.path.dirname(__file__)+"/storage/init-validators.json", "w") as json_file:
+      json.dump(self.__validators, json_file, indent=4, sort_keys=True)
+
+    ## TO DO Separate validator and regular node data
   
+
   
   def __FetchCodeThread(self,host: str) -> None:
     # setup ssh client
@@ -239,20 +255,20 @@ class Cloud(Environment):
       ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
     except BaseException as e:
       print(f"Could not connect to {host} . ERROR: {e}")
-      
+      exit()
 
     # remove clone dir if already exists
-    ssh.exec_command("rm -R "+self.__args.clone_path)
-    ssh.exec_command("mkdir -p "+self.__args.clone_path)
+    ssh.exec_command(f"rm -f -R {self.__args.clone_path} && mkdir -p {self.__args.clone_path}")
+
 
     # check if git is installed
     _,out,_ = ssh.exec_command("which git")
     if not out.read():
-      # install git ubuntu
-      ssh.exec_command("sudo apt install git")
-    
-    #clone branch
-    ssh.exec_command(f"cd {self.__args.clone_path} && git clone https://github.com/0xPolygon/polygon-sdk.git -b {self.__args.branch} .")
+      # install git and create binary
+      ssh.exec_command(f"sudo apt install git && cd {self.__args.clone_path} && git clone https://github.com/0xPolygon/polygon-sdk.git -b {self.__args.branch} .  && CGO_ENABLED=0 go build -a -o artifacts/polygon-sdk . && sudo mv artifacts/polygon-sdk /usr/local/bin")
+    else:
+      # create binary
+      ssh.exec_command(f"cd {self.__args.clone_path} && git clone https://github.com/0xPolygon/polygon-sdk.git -b {self.__args.branch} .  && CGO_ENABLED=0 go build -a -o artifacts/polygon-sdk . && sudo mv artifacts/polygon-sdk /usr/local/bin")
 
     print(f"Branch {self.__args.branch} on {host} is cloned.")
 
@@ -268,6 +284,7 @@ class Cloud(Environment):
       ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
     except BaseException as e:
       print(f"Could not connect to {host} . ERROR: {e}")
+      exit()
 
     _,out,_ = ssh.exec_command("which go")
     if not out.read():
@@ -279,12 +296,34 @@ class Cloud(Environment):
     
     ssh.close()
     return
-    
-  
+     
+  def __InitPSDKServerThread(self, host: str) -> None:
 
-  
-  def _InitPSDKServer(self):
-    print("Init psdk")
+    # setup ssh client
+    ssh = paramiko.SSHClient()
+    ssh.get_host_keys().clear()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+      ssh.connect(username=self.__args.ssh_user, hostname=host, key_filename=self.__args.ssh_key,timeout=5)
+    except BaseException as e:
+      print(f"Could not connect to {host} . ERROR: {e}")
+      exit()
+    
+    print(f"Initialising polygon-sdk server on {host}")
+
+    # create storage dir that will hold node info
+    if not os.path.isdir(os.path.dirname(__file__)+"/storage"):
+      os.mkdir(os.path.dirname(__file__)+"/storage")
+
+    # delete existing directory if exists and init new server
+    ssh.exec_command(f"rm -f -R {self.__args.psdk_data} && rm -f -R {self.__args.psdk_logs} && mkdir -p {self.__args.psdk_logs} && /usr/local/bin/polygon-sdk secrets init --data-dir {self.__args.psdk_data} --json > {self.__args.psdk_logs}/init.json")
+
+
+    # save node data
+    self.__validators[host] = json.loads(ssh.exec_command(f"cat {self.__args.psdk_logs}/init.json")[1].read())
+    ssh.close()
+    return
+    
   
   def _GenerateGenesisFile(self):
     print("Generate Genesis")
